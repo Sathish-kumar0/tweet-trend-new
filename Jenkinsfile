@@ -10,7 +10,16 @@ pipeline {
     stages {
         stage ('build') {
             steps {
+                echo"-------------build started------------"
                 sh 'mvn clean deploy -DskipTests'
+                echo"-------------build started------------"
+            }
+        }
+        stage ("test") {
+            steps{
+                echo "-------------unit test started------------"
+                sh 'mvn surefire-report:report'
+                echo "-------------unit test completed------------"
             }
         }
         stage('SonarQube analysis') {
