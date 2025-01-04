@@ -1,4 +1,6 @@
 def registry = 'https://trial7aanip.jfrog.io'
+def imageName = 'trial7aanip.jfrog.io/valaxy-docker-local//ttrend'
+def version   = '2.1.2'
 pipeline {
     agent {
         node {
@@ -50,39 +52,27 @@ pipeline {
   
 }
 
-        stage('JFROG Artifact Publish') {
-    steps {
+           
+    stage(" Docker Build ") {
+      steps {
         script {
-            echo '<--------------- Jar Publish Started --------------->'
-            def server = Artifactory.newServer(url: registry + "/artifactory", credentialsId: "jfrog-cred")
-            def properties = "buildid=${env.BUILD_ID},commitid=${GIT_COMMIT}"
-            
-            // Debugging environment variables
-            echo "BUILD_ID: ${env.BUILD_ID}"
-            echo "GIT_COMMIT: ${env.GIT_COMMIT}"
+           echo '<--------------- Docker Build Started --------------->'
+           app = docker.build(imageName+":"+version)
+           echo '<--------------- Docker Build Ends --------------->'
+        }
+      }
+    }
 
-            def uploadSpec = """{
-                "files": [
-                    {
-                        "pattern": "jarstaging/*",
-                        "target": "libs-release-local/",
-                        "flat": true,
-                        "props": "${properties}"
-                    }
-                ]
-            }"""
-
-            try {
-                def buildInfo = server.upload(uploadSpec)
-                buildInfo.env.collect()
-                server.publishBuildInfo(buildInfo)
-                echo '<--------------- Jar Publish Completed Successfully --------------->'
-            } catch (Exception e) {
-                echo "Error occurred during artifact upload: ${e}"
-                error "Artifact upload failed."
+            stage (" Docker Publish "){
+        steps {
+            script {
+               echo '<--------------- Docker Publish Started --------------->'  
+                docker.withRegistry(registry, 'jfrog-cred'){
+                    app.push()
+                }    
+               echo '<--------------- Docker Publish Ended --------------->'  
             }
         }
     }
-}
 }
 }
