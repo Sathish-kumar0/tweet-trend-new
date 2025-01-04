@@ -51,27 +51,48 @@ pipeline {
 }
 
         stage('JFROG Artifact Publish') {
+
             steps {
+
                 script {
+
                     echo '<--------------- Jar Publish Started --------------->'
+            // Define Artifactory server
                     def server = Artifactory.newServer(url: registry + "/artifactory", credentialsId: "jfrog-cred")
+
+            // Define properties
                     def properties = "buildid=${env.BUILD_ID},commitid=${GIT_COMMIT}"
+            
+            // Debugging environment variables
+                    echo "BUILD_ID: ${env.BUILD_ID}"
+                    echo "GIT_COMMIT: ${env.GIT_COMMIT}"
+
+            // Define upload spec
                     def uploadSpec = """{
-                        "files": [
-                            {
-                                "pattern": "jarstaging/*",
-                                "target": "libs-release-local/",
-                                "flat": false,
-                                "props": "${properties}"
-                            }
-                        ]
-                    }"""
+
+                    "files": [
+
+                    {
+                        "pattern": "jarstaging/*",
+                        "target": "libs-release-local/",
+                        "flat": true,
+                        "props": "${properties}"
+                    }
+                ]
+            }"""
+
+            // Upload files
                     def buildInfo = server.upload(uploadSpec)
+                    echo "Build Info: ${buildInfo}"
+            
+            // Collect environment info
                     buildInfo.env.collect()
+            
+            // Publish Build Info
                     server.publishBuildInfo(buildInfo)
                     echo '<--------------- Jar Publish Ended --------------->'
-                }
-            }
         }
+    }
+}
 }
 }
